@@ -1,0 +1,16 @@
+{
+  "name": "com.lbp.lbf-unity",
+  "version": "1.0.0",
+  "displayName": "Little Big Framework",
+  "description": "A collection of utilities",
+  "unity": "2019.1",
+  "unityRelease": "0b5",
+  "keywords": [
+	"lbp"
+  ],
+  "author": {
+    "name": "Garry Williams",
+    "email": "garry.wls@gmail.com",
+    "url": "garrywilliams.fr"
+  }
+}
