@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,45 +7,45 @@ using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
 
-namespace LBF
+namespace LBF.Utils
 {
     [CreateAssetMenu(menuName = "LBF/Colors/ColorPaletteAsset")]
     public class ColorPaletteAsset : SerializedScriptableObject
     {
+        public const string Tab = "\t";
+
         public struct ColorEntry
         {
             public String Name;
             public Color Color;
-        
-            public ColorEntry( string name, Color color ) {
+
+            public ColorEntry(string name, Color color)
+            {
                 Name = name;
                 Color = color;
             }
         }
 
-        [TitleGroup("Code Generation")]
-        public String Namespace;
+        [TitleGroup("Code Generation")] public String Namespace;
         public String Class;
-        [FolderPath]
-        public String Folder;
+        [FolderPath] public String Folder;
 
         [TitleGroup("Actions")]
         [Button]
         public void Generate() => DoGenerate();
 
-        [TitleGroup("Colors")]
-        [TableList(AlwaysExpanded = true)]
+        [TitleGroup("Colors")] [TableList(AlwaysExpanded = true)]
         public List<ColorEntry> Colors = new List<ColorEntry>();
 
         private void DoGenerate()
         {
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (Class == "") return;
             if (Folder == "") return;
             if (Colors == null) return;
 
             var sb = new StringBuilder();
-            
+
             //Usings
             sb.AppendLine("using UnityEngine;");
             sb.AppendLine();
@@ -56,27 +55,30 @@ namespace LBF
             if (Namespace != "") sb.AppendLine("{");
 
             //Class Declaration
-            sb.AppendLine("public static class " + SafeName(Class));
-            sb.AppendLine("{");
+            sb.AppendLine(Tab + "public static class " + SafeName(Class));
+            sb.AppendLine(Tab + "{");
 
             //Fields
             foreach (var color in Colors)
             {
-                sb.AppendLine("\tpublic static Color " + SafeName(color.Name) + ";");
+                sb.AppendLine(Tab + Tab + "public static Color " + SafeName(color.Name) + ";");
             }
+
             sb.AppendLine();
 
             //Constructor
-            sb.AppendLine("static " + SafeName(Class) + "()");
-            sb.AppendLine("{");
+            sb.AppendLine(Tab + Tab + "static " + SafeName(Class) + "()");
+            sb.AppendLine(Tab + Tab + "{");
             foreach (var color in Colors)
             {
-                sb.AppendLine("\tColorUtility.TryParseHtmlString(\"#" + ColorUtility.ToHtmlStringRGB(color.Color) + "\", out " + SafeName(color.Name) + ");");
+                sb.AppendLine(Tab + Tab + Tab + "ColorUtility.TryParseHtmlString(\"#" +
+                              ColorUtility.ToHtmlStringRGB(color.Color) + "\", out " + SafeName(color.Name) + ");");
             }
-            sb.AppendLine("}");
+
+            sb.AppendLine(Tab + Tab + "}");
 
             //Class Close
-            sb.AppendLine("}");
+            sb.AppendLine(Tab + "}");
 
             //Namespace Close
             if (Namespace != "") sb.AppendLine("}");
@@ -90,19 +92,15 @@ namespace LBF
                 writer.Write(fileContent);
                 writer.Flush();
             }
-            
-            AssetDatabase.Refresh();
-  #endif
+
+            AssetDatabase.Refresh(); 
+#endif
         }
 
         private string SafeName(string value)
         {
-            string className = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(value);
-            bool isValid = true;//Microsoft.CSharp.CSharpCodeProvider.CreateProvider("C#").IsValidIdentifier(className);
+            string className = value.Replace(" ", String.Empty);
 
-            if (isValid)
-                return className.Replace( " ", String.Empty );
-            
             // File name contains invalid chars, remove them
             Regex regex = new Regex(@"[^\p{Ll}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Nl}\p{Mn}\p{Mc}\p{Cf}\p{Pc}\p{Lm}]");
             className = regex.Replace(className, "");
@@ -113,7 +111,7 @@ namespace LBF
                 className = className.Insert(0, "_");
             }
 
-            return className.Replace(" ", String.Empty); 
+            return className.Replace(" ", String.Empty);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LBF.Updatables {
+namespace LBF.Gameplay.Updatables {
 	public class SingleTaskSystem<T> {
 		public event Action<IUpdatableTask<T>> OnTaskComplete;
 	

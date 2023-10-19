@@ -1,4 +1,4 @@
-﻿namespace LBF.Updatables {
+﻿namespace LBF.Gameplay.Updatables {
     public interface IUpdatable
     {
         void Start();

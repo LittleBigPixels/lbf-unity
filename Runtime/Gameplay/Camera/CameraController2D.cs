@@ -2,11 +2,11 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-namespace LBF
+namespace LBF.Gameplay.Camera
 {
     public interface ICameraController
     {
-        Camera Camera { get; set; }
+        UnityEngine.Camera Camera { get; set; }
         void Update(float dt);
     }
 
@@ -19,7 +19,7 @@ namespace LBF
             XZ,
         }
 
-        public Camera Camera { get; set; }
+        public UnityEngine.Camera Camera { get; set; }
 
         //Parameters
         [TitleGroup("Parameters - View")]
@@ -45,7 +45,7 @@ namespace LBF
             Camera = null;
         }
     
-        public CameraController2D(Camera target) {
+        public CameraController2D(UnityEngine.Camera target) {
             Camera = target;
         }
 
@@ -76,9 +76,9 @@ namespace LBF
             if (Input.GetKey(KeyCode.RightArrow))
                 Offset += speedCoef * KeyboardPanSpeed * dt * Vector2.right;
 
-            if (Input.GetKey(KeyCode.Z))
+            if (Input.GetKey(KeyCode.W))
                 Offset += speedCoef * KeyboardPanSpeed * dt * Vector2.up;
-            if (Input.GetKey(KeyCode.S))
+            if (Input.GetKey(KeyCode.A))
                 Offset -= speedCoef * KeyboardPanSpeed * dt * Vector2.up;
             if (Input.GetKey(KeyCode.Q))
                 Offset += speedCoef * KeyboardPanSpeed * dt * Vector2.left;

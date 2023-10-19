@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace LBF
+namespace LBF.Gameplay
 {
 	public class GameObjectBuilder
 	{
