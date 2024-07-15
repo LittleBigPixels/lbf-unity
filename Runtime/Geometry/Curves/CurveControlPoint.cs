@@ -18,7 +18,7 @@ namespace LBF.Geometry.Curves
         public readonly Vector2 Position;
         public readonly Vector2 Direction;
         
-        public CurveControlPoint2D( Vector2 direction, Vector2 position ) {
+        public CurveControlPoint2D( Vector2 position, Vector2 direction ) {
             Direction = direction;
             Position = position;
         }

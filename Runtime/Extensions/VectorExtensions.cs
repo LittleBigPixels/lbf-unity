@@ -24,7 +24,7 @@ namespace LBF
             return new Vector3(v.x, 0, v.y);
         }
 
-        public static Vector3 FromHorizontal(this Vector2 v, float height)
+        public static Vector3 FromXZ(this Vector2 v, float height)
         {
             return new Vector3(v.x, height, v.y);
         }

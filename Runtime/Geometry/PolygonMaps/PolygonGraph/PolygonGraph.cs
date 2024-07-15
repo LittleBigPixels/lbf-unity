@@ -5,10 +5,24 @@ namespace LBF.Geometry.PolygonMaps
 {
     public partial class PolygonGraph
     {
+        //Cell interior center positions
+        //Sorted by cell indices
         public Vector2[] CellCenters;
+        
+        //Cell border vertex positions
+        //In no particular order
         public Vector2[] Vertices;
+        
+        //Cell border edges, as indices into Vertices
+        //Edge are ordered by cell, in clockwise orders
         public int[] HalfEdges;
+        
+        //Cell border edges, as indices into HalfEdges
+        //In no particular order
+        //OppositeEdges corresponds to the edge in neighbouring cell
         public int[] OppositeEdges;
+        
+        //Index of the first edge in a cell, as indices into HalfEdges
         public int[] CellEdgesStarts;
 
         public int FirstEdge(int cell) => CellEdgesStarts[cell];

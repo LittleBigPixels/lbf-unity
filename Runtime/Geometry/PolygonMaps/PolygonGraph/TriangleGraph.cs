@@ -46,6 +46,12 @@ namespace LBF.Geometry.PolygonMaps
         {
         }
 
+        public static TriangleGraph CreateDelaunay(Vector2[] points)
+        {
+            var delaunayTriangulation = new Triangulation(points);
+            return new TriangleGraph(delaunayTriangulation);
+        }
+
         public int TriangleFirstEdge(int triangle) => triangle * 3;
         public int EdgeTriangle(int edge) => edge / 3;
         public int NextEdgeInTriangle(int edge) => edge % 3 == 2 ? edge - 2 : edge + 1;
@@ -59,7 +65,7 @@ namespace LBF.Geometry.PolygonMaps
 
         public void BoundedLoydRelaxation(IBoundaryQuery boundary, float w)
         {
-            var voronoi = PolygonGraph.FromDelaunay(this, boundary, PolygonGraph.VertexType.Circumenter);
+            var voronoi = PolygonGraph.FromDelaunay(this, boundary, PolygonGraph.VertexPositionType.Circumcenter);
             for (int v = 0; v < Vertices.Length; v++)
             {
                 var newPos = voronoi.CellCenters[v];

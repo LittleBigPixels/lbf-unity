@@ -4,7 +4,7 @@ using UnityEngine;
 namespace LBF.Geometry.PolygonMaps
 {
     [Serializable]
-    public class PolygonalLayer<T>
+    public class PolygonMapLayer<T>
     {
         [SerializeField]
         public T[] Values;
@@ -21,25 +21,30 @@ namespace LBF.Geometry.PolygonMaps
 
         public int PolygonCount { get { return Values.Length; } }
 
-        public PolygonalLayer()
+        public PolygonMapLayer()
         {
             Values = new T[0];
         }
 
-        public PolygonalLayer(int polygonCount)
+        public PolygonMapLayer(int polygonCount)
         {
             Values = new T[polygonCount];
         }
 
-        public PolygonalLayer(PolygonMap graph)
+        public PolygonMapLayer(PolygonMap map)
         {
-            Values = new T[graph.PolygonCount];
+            Values = new T[map.PolygonCount];
         }
 
         public void ResetToValue(T value)
         {
             for (int i = 0; i < Values.Length; i++)
                 Values[i] = value;
+        }  
+        
+        public void CopyTo<T>(PolygonMapLayer<T> target)
+        {
+            Values.CopyTo(target.Values, 0);
         }
     }
 }
