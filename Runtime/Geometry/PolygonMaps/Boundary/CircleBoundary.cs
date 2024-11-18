@@ -16,7 +16,7 @@ namespace LBF.Geometry.PolygonMaps
             m_radius = radius;
             m_radiusSquared = radius * radius;
 
-            var pointCount = (int)(m_radius / 5) + 6;
+            var pointCount = 45;
             Vertices = new Vector2[pointCount];
             for (int i = 0; i < pointCount; i++)
             {
@@ -32,6 +32,8 @@ namespace LBF.Geometry.PolygonMaps
 
         public Helpers.BoundaryIntersection Raycast(Ray2D ray)
         {
+            return Helpers.RaycastBoundary(Vertices, ray);
+            
             Vector2 rayDir = ray.direction.normalized;
             Vector2 rayToCenter = m_center - ray.origin;
 

@@ -8,23 +8,64 @@ namespace LBF.Geometry.PolygonMaps
 {
     public partial class PolygonGraph
     {
-        public enum VertexType
+        public enum VertexPositionType
         {
             Barycenter,
-            Circumenter
+            Circumcenter
         }
 
+        struct VertexData
+        {
+            public enum VertexType
+            {
+                Interior,
+                Projection,
+                Boundary
+            }
+
+            public VertexType Type;
+            public Vector2 Position;
+            public int BoundarySegmentIndex;
+
+            public VertexData(VertexType type, Vector2 position)
+            {
+                Type = type;
+                Position = position;
+                BoundarySegmentIndex = -1;
+            }
+
+            public VertexData(Vector2 position, int boundarySegmentIndex)
+            {
+                Type = VertexType.Projection;
+                Position = position;
+                BoundarySegmentIndex = boundarySegmentIndex;
+            }
+        }
+
+        private static bool once = false;
+
         public static PolygonGraph FromDelaunay(TriangleGraph triangleGraph, IBoundaryQuery boundary,
-            VertexType vertexType)
+            VertexPositionType vertexPositionType)
         {
             //Construct a list of all voronoi cell vertices
-            var voronoiCellVertices = new List<Vector2>(triangleGraph.Edges.Length * 2);
+            var voronoiCellVertices =
+                new List<VertexData>(triangleGraph.Edges.Length * 2 + boundary.Vertices.Length);
             var circumcenterToCellVertexIndex = new int[triangleGraph.TriangleCount];
             var exteriorEdgeProjectionToCellVertexIndex = new int[triangleGraph.Edges.Length];
+            var boundaryToCellVertexIndex = new int[boundary.Vertices.Length];
+
+            int iCellVertexIndex = 0;
+
+            //Add boundary vertices to the voronoi vertices
+            for (int i = 0; i < boundary.Vertices.Length; i++)
+            {
+                boundaryToCellVertexIndex[i] = iCellVertexIndex;
+                voronoiCellVertices.Add(new VertexData(VertexData.VertexType.Boundary, boundary.Vertices[i]));
+                iCellVertexIndex++;
+            }
 
             //Compute the circumcenter of all delaunay triangle and if it lies inside or outside the boundary
             Profiler.BeginSample("Compute circumcenters");
-            int iCellVertexIndex = 0;
             var circumcenters = new Vector2[triangleGraph.TriangleCount];
             var isCircumcenterOutsideBoundary = new bool[triangleGraph.TriangleCount];
 
@@ -43,10 +84,10 @@ namespace LBF.Geometry.PolygonMaps
                 if (!isCircumcenterOutsideBoundary[tri])
                 {
                     circumcenterToCellVertexIndex[tri] = iCellVertexIndex++;
-                    var position = vertexType == VertexType.Barycenter
+                    var position = vertexPositionType == VertexPositionType.Barycenter
                         ? triangleGraph.Barycenter(tri)
                         : triangleGraph.Circumcenter(tri);
-                    voronoiCellVertices.Add(position);
+                    voronoiCellVertices.Add(new VertexData(VertexData.VertexType.Interior, position));
                 }
             }
 
@@ -69,14 +110,14 @@ namespace LBF.Geometry.PolygonMaps
 
             //Foreach of these exterior edges, project the circumcenter of their triangle to the boundary
             Profiler.BeginSample("Project exterior edges to boundary");
-            var exteriorEdgeProjections = new Vector2[triangleGraph.Edges.Length];
+            var exteriorEdgeProjections = new Helpers.BoundaryIntersection[triangleGraph.Edges.Length];
             for (int e = 0; e < triangleGraph.Edges.Length; e++)
             {
                 if (!isEdgeExterior[e]) continue;
                 var sourceCircumcenter = circumcenters[e / 3];
                 var normal = triangleGraph.EdgeNormal(e);
                 var boundaryIntersection = boundary.Raycast(new Ray2D(sourceCircumcenter, normal));
-                exteriorEdgeProjections[e] = boundaryIntersection.Intersection;
+                exteriorEdgeProjections[e] = boundaryIntersection;
             }
 
             Profiler.EndSample();
@@ -87,7 +128,8 @@ namespace LBF.Geometry.PolygonMaps
             {
                 if (!isEdgeExterior[e]) continue;
                 exteriorEdgeProjectionToCellVertexIndex[e] = iCellVertexIndex++;
-                voronoiCellVertices.Add(exteriorEdgeProjections[e]);
+                var edgeProjection = exteriorEdgeProjections[e];
+                voronoiCellVertices.Add(new VertexData(edgeProjection.Intersection, edgeProjection.SegmentIndex));
             }
 
             Profiler.EndSample();
@@ -127,6 +169,7 @@ namespace LBF.Geometry.PolygonMaps
                 startEdge = currentEdge;
 
                 var previousTri = -1;
+                var firstProjectedVertexIndex = -1;
                 while (true)
                 {
                     var tri = currentEdge / 3;
@@ -136,6 +179,7 @@ namespace LBF.Geometry.PolygonMaps
                     {
                         if (isEdgeExterior[currentEdge])
                         {
+                            firstProjectedVertexIndex = exteriorEdgeProjectionToCellVertexIndex[currentEdge];
                             cellVertexIndices.Add(exteriorEdgeProjectionToCellVertexIndex[currentEdge]);
                             //The index of the opposite cell is the same as the other vertex in the edge,
                             //which is the start of next edge
@@ -153,6 +197,21 @@ namespace LBF.Geometry.PolygonMaps
                             cellVertexIndices.Add(exteriorEdgeProjectionToCellVertexIndex[previousEdge]);
                             //The second exterior edge correspond to cell edge with no opposite
                             cellEdgeOppositeCell.Add(-1);
+
+                            //Add boundary edges to complete cell
+                            var lastProjectedVertexIndex = exteriorEdgeProjectionToCellVertexIndex[previousEdge];
+                            var end = voronoiCellVertices[firstProjectedVertexIndex].BoundarySegmentIndex;
+                            var start = voronoiCellVertices[lastProjectedVertexIndex].BoundarySegmentIndex;
+                            if (end < start) end += boundary.Vertices.Length;
+
+                            if (once == true) break;
+                            
+                            for (int i = end; i > start; i--)
+                            {
+                                cellVertexIndices.Add(boundaryToCellVertexIndex[i % boundaryToCellVertexIndex.Length]);
+                                cellEdgeOppositeCell.Add(-1);
+                                //once = true;
+                            }
                         }
                     }
 
@@ -163,10 +222,10 @@ namespace LBF.Geometry.PolygonMaps
                 }
 
                 foreach (var index in cellVertexIndices)
-                    cellVerticesPosition.Add(voronoiCellVertices[index]);
+                    cellVerticesPosition.Add(voronoiCellVertices[index].Position);
 
                 //Construct the cell
-                cellCenters.Add(Helpers.PolygonCentroid(cellVerticesPosition));
+                cellCenters.Add(triangleGraph.Vertices[v]);
                 cellStarts.Add(iEdge);
 
                 for (int i = 0; i < cellEdgeOppositeCell.Count; i++)
@@ -174,6 +233,21 @@ namespace LBF.Geometry.PolygonMaps
                     edges.Add(cellVertexIndices[i]);
                     edgesOppositeCell.Add(cellEdgeOppositeCell[i]);
                     iEdge++;
+                }
+
+                if (voronoiCellVertices.First().BoundarySegmentIndex != -1)
+                {
+                    Debug.Assert(voronoiCellVertices.Last().BoundarySegmentIndex != -1);
+                    var start = voronoiCellVertices.First().BoundarySegmentIndex;
+                    var end = voronoiCellVertices.Last().BoundarySegmentIndex;
+                    if (end < start) end += boundary.Vertices.Length;
+                    for (int i = start; i < end; i++)
+                    {
+                        cellVerticesPosition.Add(boundary.Vertices[i % boundary.Vertices.Length]);
+                        edges.Add(cellVertexIndices[i]);
+                        edgesOppositeCell.Add(cellEdgeOppositeCell[i]);
+                        iEdge++;
+                    }
                 }
             }
 
@@ -183,7 +257,6 @@ namespace LBF.Geometry.PolygonMaps
             //Using information from the edge cell and the opposite cell
             Profiler.BeginSample("Fix up opposite edges");
             var oppositeEdges = new int[edges.Count];
-            //for (int cell = 0; cell < cellStarts.Count; cell++)
             Parallel.For(0, cellStarts.Count, cell =>
             {
                 var edgeStartIndex = cellStarts[cell];
@@ -210,7 +283,7 @@ namespace LBF.Geometry.PolygonMaps
             Profiler.EndSample();
 
             var graph = new PolygonGraph();
-            graph.Vertices = voronoiCellVertices.ToArray();
+            graph.Vertices = voronoiCellVertices.Select(v => v.Position).ToArray();
             graph.CellCenters = cellCenters.ToArray();
             graph.HalfEdges = edges.ToArray();
             graph.OppositeEdges = oppositeEdges.ToArray();
@@ -237,7 +310,6 @@ namespace LBF.Geometry.PolygonMaps
             //Build a new list of exterior edges after culling triangles whose circumcenters lies outside the boundary
             Profiler.BeginSample("Mark exterior edges");
             var isEdgeExterior = new bool[triangleGraph.Edges.Length];
-            //for (int e = 0; e < triangleGraph.Edges.Length; e++)
             Parallel.For(0, triangleGraph.Edges.Length, (e) =>
             {
                 if (triangleGraph.IsExteriorEdge(e))
@@ -252,7 +324,6 @@ namespace LBF.Geometry.PolygonMaps
             //Foreach of these exterior edges, project the circumcenter of their triangle to the boundary
             Profiler.BeginSample("Project exterior edges to boundary");
             var exteriorEdgeProjections = new Vector2[triangleGraph.Edges.Length];
-            //for (int e = 0; e < triangleGraph.Edges.Length; e++)
             Parallel.For(0, triangleGraph.Edges.Length, (e) =>
             {
                 if (!isEdgeExterior[e]) return;
@@ -265,7 +336,6 @@ namespace LBF.Geometry.PolygonMaps
 
             //Construct the voronoi cells
             Profiler.BeginSample("Create voronoi cells");
-            //for (int v = 0; v < triangleGraph.Vertices.Length; v++)
             Parallel.For(0, triangleGraph.Vertices.Length, (v) =>
             {
                 List<Vector2> cellVerticesPosition = new List<Vector2>(16);

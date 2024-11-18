@@ -2,10 +2,10 @@
 
 namespace LBF.Structures
 {
-    public readonly struct Point
+    public struct Point
     {
-        public readonly int x;
-        public readonly int y;
+        public int x;
+        public int y;
 
         public Point(int x, int y)
         {

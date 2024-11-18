@@ -74,7 +74,7 @@ namespace LBF.Structures
         }
         
         public SpatialGrid( float size, int nCellXY ) 
-        : this(0.5f * size * Vector2.one, 0.5f * size * -Vector2.one, nCellXY, nCellXY)
+        : this(0.5f * size * -Vector2.one, 0.5f * size * Vector2.one, nCellXY, nCellXY)
         {
         }
 

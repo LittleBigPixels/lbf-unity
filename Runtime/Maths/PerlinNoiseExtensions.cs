@@ -12,6 +12,13 @@ namespace LBF
         public int Octaves;
 
         public static MultiPerlinParameters Default = new MultiPerlinParameters() { Scale = 250, Persistence = 0.75f, Octaves = 3 };
+
+        public MultiPerlinParameters(float scale, float persistence, int octaves)
+        {
+	        Scale = scale;
+	        Persistence = persistence;
+	        Octaves = octaves;
+        }
     }
 	
     [Serializable]

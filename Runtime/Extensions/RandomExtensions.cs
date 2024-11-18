@@ -59,6 +59,18 @@ namespace LBF
             if (random.NextFloat01() >= 0.5f)
                 return true;
             return false;
+        }    
+        
+        /// <summary>
+        /// Returns true or false randomly.
+        /// </summary>
+        /// <param name="random"></param>
+        /// <returns></returns>
+        public static bool NextChance(this Random random, float probabilty01)
+        {
+            if (random.NextFloat01() <= probabilty01)
+                return true;
+            return false;
         }
 
         /// <summary>
