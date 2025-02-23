@@ -154,6 +154,11 @@ namespace LBF
         {
             return Vector3.Project(v.FromXZ(), direction.FromXZ()).XZ();
         }
+        
+        public static float CrossDet(Vector2 a, Vector2 b)
+        {
+            return a.x * b.y - a.y * b.x;
+        }
 
         public static Vector2 Map(float inMin, float inMax, Vector2 outMin, Vector2 outMax, float x)
         {
