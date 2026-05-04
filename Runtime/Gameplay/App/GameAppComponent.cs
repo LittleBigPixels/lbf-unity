@@ -7,6 +7,15 @@ public class GameAppComponent : SerializedMonoBehaviour
 {
     private IGameApp m_gameApp;
     private bool m_flagReset;
+
+    public static GameAppComponent Create(IGameApp app)
+    {
+        var gameObject = new GameObject("Game");
+        var gameAppCmp = gameObject.AddComponent<GameAppComponent>();
+        gameAppCmp.StartApp(app);
+
+        return gameAppCmp;
+    }
     
     public void StartApp(IGameApp app)
     {
